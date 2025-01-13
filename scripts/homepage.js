@@ -1,12 +1,42 @@
-async function main() {
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function findElementGlobal(selector, root = document) {
+  let elements = [];
+
+  elements.push(...root.querySelectorAll(selector));
+
+  if (root.shadowRoot) {
+    elements.push(...findElementGlobal(selector, root.shadowRoot));
+  }
+
+  root.querySelectorAll("*").forEach((child) => {
+    if (child.shadowRoot) {
+      elements.push(...findElementGlobal(selector, child.shadowRoot));
+    }
+  });
+
+  return elements;
+}
+
+async function fixCards() {
+  let cards = null;
+  while (cards === null) {
+    await wait(50);
+    if (findElementGlobal("d2l-enrollment-card").length != 0) cards = findElementGlobal("d2l-enrollment-card");
+  }
+
+  cards.forEach((card) => {
+    console.log(findElementGlobal("d2l-card")[0].getAttribute("text"));
+  });
+}
+
+async function fixTabs() {
   const helpCard = document.querySelector("div[class='d2l-widget d2l-tile d2l-custom-widget']");
   helpCard.remove();
   const wellnessNavigator = document.querySelector("div[class='d2l-widget d2l-tile d2l-custom-widget']");
   wellnessNavigator.remove();
-
-  function wait(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 
   let coursesBody = document
     .querySelector("d2l-my-courses")
@@ -28,8 +58,6 @@ async function main() {
 
   const tabsSelectElement = document.createElement("select");
 
-  console.log(tabs);
-
   tabs.forEach((tab) => {
     const tabHtml = tab.shadowRoot.firstElementChild.innerHTML;
     const tabTitle = tabHtml.substring(tabHtml.indexOf("-->") + 3);
@@ -50,7 +78,6 @@ async function main() {
   });
 
   tabsSelectElement.addEventListener("change", (e) => {
-    console.log(e.target.value);
     e.target.querySelector(`option[value='${e.target.value}']`).click();
   });
 
@@ -66,6 +93,6 @@ async function main() {
     .insertAdjacentElement("beforebegin", tabsSelectElement);
 }
 
-main().then(() => {
-  console.log("done");
-});
+fixTabs();
+
+fixCards();
